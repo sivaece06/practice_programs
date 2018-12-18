@@ -1,0 +1,157 @@
+#include "mbed.h"
+/**************************************************************
+  This sample code shows how to bit-bang two GPIO lines to generate
+I2C patterns to send debugging info to a protocol analyzer. 
+
+  The code acts as a master sending data to a slave (the protocol
+analyzer). It expects nothing to be returned.
+
+  Note that there is no slave; this broadcasts data into the air 
+purely for debugging purphoses, purely for feeding a protocol analyzer.
+So there's no support for clock stretching or anything else. 
+
+  NXP's app note AN10216-01 (http://www.nxp.com/documents/application_note/AN10216.pdf)
+is a good place to find detailed info about I2C.
+
+  This code was compiled with the mbed.org on-line compiler.
+
+  Coded July 2014 by Jack Ganssle. No rights reserved, distribute at will.
+
+***************************************************************/
+
+//typedef int uint16_t;         // In case this type is not defined
+#define HIGH 1                  // Value asserted to drive I2C high
+#define LOW  0                  // Value asserted to drive I2C low
+
+void delay(void);
+
+//  The code between here and the comment "End of board-specific code"
+// defines the GPIO pins used for the I2C signals SDA and SCL and
+// includes routines to set those bits. This is the only board/CPU specific code.
+
+
+//#define LPC1768               // For NXP's LPC1768 Cortex M3 board.
+#define FRDM                    // For Freescale's FRDM-KL25Z Cortex M0 board.
+
+#ifdef LPC1768
+// Define the I2C GPIO lines. This is the way MBED does it for the LPC1768 board.
+DigitalOut SDA (p13);           // I2C SDA (data) GPIO bit goes to board pin 13.
+DigitalOut SCL (p14);           // I2C SCL (clock) GPIO bit goes to board pin 14.
+DigitalOut TEST (p12);          // Another GPIO pin just for testing goes to board pin 12.
+#endif
+
+#ifdef FRDM
+// Define the I2C GPIO lines. This is the way MBED does it for the FRDM-KL25Z board.
+DigitalOut SDA (PTA1);          // I2C SDA (data) GPIO bit goes to board connection PTA1.
+DigitalOut SCL (PTA2);          // I2C SCL (clock) GPIO bit goes to board connection PTA2.
+DigitalOut TEST (PTA4);         // Another GPIO pin just for testing goes to board connection PTA4.
+#endif
+
+// Function to write a bit to the SDA control line.
+//
+// The parameter is HIGH or LOW.
+ void sda_write(uint16_t value)
+{
+    SDA = value;                // Drive the SDA line high or low.
+    delay();                    // If needed, delay to slow the signal to the protocol analyzer.
+}
+
+// Function to write a bit to the SCL control line.
+//
+// The parameter is HIGH or LOW.
+ void scl_write(uint16_t value)
+{
+    SCL = value;                // Drive the SCL line high or low. 
+    delay();                    // If needed, delay to slow the signal to the protocol analyzer.
+}
+
+// Function to toggle the TEST pin, generally done just to trigger a scope/protocol analyzer.
+void test_toggle(void)
+{
+    TEST = HIGH;
+    TEST = LOW;
+}
+// End of board-specific code.
+
+//  This is an optional routine to put a delay between asserting bits if they
+// change too rapidly for your protocol analyzer. This is inlined to remove
+// any performance hit if it is not used and a low compiler optimization has been
+// selected.
+inline void delay(void)
+{
+}
+
+// Function to issue a START to the I2C bus.
+void i2c_start(void)
+{
+    sda_write(HIGH);
+    scl_write(HIGH);
+    sda_write(LOW);
+    scl_write(LOW);
+}
+
+// Function to issue a STOP to the I2C bus.
+void i2c_stop(void)
+{
+    scl_write(LOW);
+    sda_write(LOW);
+    scl_write(HIGH);
+    sda_write(HIGH);
+}
+
+//  Function to send 8 bits to the I2C bus. 
+//
+//  Some protocol analyzers may be confused with no slave to ack the byte.
+// This code, therefore, fakes an ack from a slave.
+//
+// Variable "data" holds the bits to send.
+void i2c_write_byte(uint16_t data)
+{
+    uint16_t i;
+ 
+    for(i = 0; i < 8; i++)
+    {
+        if(data & 0x80) sda_write(HIGH);
+        else sda_write(LOW);
+        data <<= 1;
+        scl_write(HIGH);        // Toggle clock.
+        scl_write(LOW);
+    }
+    sda_write(LOW);             // Fake an ack from the slave.
+    scl_write(HIGH);
+    scl_write(LOW);
+}
+
+// Function to send an address and a string to the I2C bus.
+//
+// Variable "address" is the 7 bit address. LSB will be forced to zero because that indicates a write.
+// Pointer "string" is a null-terminated string of characters to send.
+void i2c_send_string(uint16_t address, char *string)
+{
+    i2c_start();
+    i2c_write_byte(address & 0xfe);    // Write address; be sure LSB=0.
+    while(*string != NULL)i2c_write_byte(*string++);
+    i2c_stop();
+}
+
+//  This is an example of using the code above. The addresses mean nothing
+// and are picked at random. Depending on your protocol analyzer, they
+// could be used to trigger acquisition. For instance, you could trigger only
+// on messages containing certain addresses.
+int main() 
+{
+    uint32_t i;
+    while(1) 
+    {
+        test_toggle();             // Trigger the scope just for this demo. Not needed
+                                   // in real applications.
+
+// First example: Send something rarely
+        for(i = 0; i < 30000000; i++)if(i == 29000)i2c_send_string(0xc0, "i=29000");
+
+// Second example: Send strings
+//        i2c_send_string(0xa0, "Test string");
+//        i2c_send_string(0xb0, "Another test string");
+
+    }
+}
