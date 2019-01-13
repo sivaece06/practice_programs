@@ -3,7 +3,7 @@
 int main() {
 	int rows, a,  b, number = 1;
 	
-	printf("Number of rows of Floyd's triangle to print:");
+	printf("Number of rows of Floyd's triangle to print: ");
 	scanf("%d",&rows);
 	
 	for ( a = 1 ; a <= rows ; a++ ) {
