@@ -1,0 +1,107 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <stack>
+
+using namespace std;
+
+typedef struct node {
+    int data;
+    struct node *next;
+}NODE;
+
+void strgrev(string &str) {
+    stack<char> S;
+    
+    for(auto c:str)
+        S.push(c);
+        
+    for(int i=0; i<str.length(); i++) {
+        
+        str[i] = S.top();
+        S.pop();
+        
+    }
+}
+
+void insert(NODE* &lis, int val) {
+    
+    if (lis == nullptr) {
+        lis = new NODE();
+        lis->data = val;
+    } else {
+        NODE *temp = new NODE();
+        
+        temp->data = val;
+        temp->next = nullptr;
+        
+        NODE *temp1 = lis;
+        
+        while(temp1->next) {
+            temp1=temp1->next;
+        }
+        
+        temp1->next = temp;
+    }
+}
+
+void revList(NODE* &lis) {
+    stack<NODE *> S;
+    
+    NODE *temp = lis;
+    
+    if(lis == nullptr)
+        return;
+    
+    while(temp != nullptr) {
+        S.push(temp);
+        temp = temp->next;
+    }
+    
+    temp = S.top();
+    lis = temp;
+    S.pop();
+    
+    while(!S.empty()) {
+        temp->next = S.top();
+        S.pop();
+        temp = temp->next;
+    }
+    
+    temp->next = nullptr;
+}
+
+int main()
+{   
+    NODE *List = nullptr;
+  
+    string str = {"Hello world"};
+    
+    strgrev(str);
+    
+    cout<<str<<endl;
+    
+    insert(List, 10);
+    insert(List, 20);
+    insert(List, 30);
+    insert(List, 40);
+    insert(List, 50);
+    
+    NODE *temp = List;
+    
+    while (temp != nullptr) {
+        cout<<temp->data<<endl;
+        temp = temp->next;
+    }
+    
+    revList(List);
+    
+    temp=List;
+    cout<<"\nAfter Reverser\n";
+    while (temp != nullptr) {
+        cout<<temp->data<<endl;
+        temp = temp->next;
+    }
+    
+    return 0;
+}
