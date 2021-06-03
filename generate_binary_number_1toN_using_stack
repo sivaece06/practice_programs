@@ -1,0 +1,45 @@
+#include <iostream>
+#include <queue>
+#include <string>
+#include <vector>
+#include <limits>
+#include <bits/stdc++.h>
+
+using namespace std;
+
+void printBinary (int num) {
+    queue<int> Q;
+    vector<string> res(num+1);
+    string::size_type sz;
+    
+    Q.push(1);
+    
+    for (int i = 0; i < num; i++) {
+        res[i] = to_string(Q.front());
+      //  cout<<Q.front()<<endl;
+        Q.pop();
+        
+        string s1 = res[i] +"0";
+        string s2 = res[i] + "1";
+        
+      //  cout<<s1<< " "<<myAtoi(s1)<< " "<<s2<<" "<< myAtoi(s2)<<endl;
+        
+        Q.push(stoi(s1));
+        Q.push(stoi(s2));
+    }
+    
+    for(int i=0; i< num;i++)
+        cout<<res[i]<<" ";
+    
+    cout<<"\n\n";
+}
+
+int main()
+{
+    printBinary(5);
+    printBinary(10);
+    printBinary(3);
+  
+    return 0;
+}
+
